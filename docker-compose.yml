@@ -1,0 +1,42 @@
+# 1. Run it using: 
+# docker compose up -d
+# 2. To enter the docker terminal, use:
+# docker compose exec hugs_preprocess bash
+# 3. After exiting the container, to shut docker down, you can use:
+# docker compose down -v --remove-orphans
+
+services:
+  hugs_preprocess:
+    user: "1000:1000"
+    build:
+      dockerfile: preprocess/Dockerfile
+    working_dir: $PWD
+    volumes:
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - /tmp/runtime-root:/tmp/runtime-root
+      - /etc/group:/etc/group:ro
+      - /etc/passwd:/etc/passwd:ro
+      - $PWD:$PWD
+      - /mnt/nas:/data/nas
+    stdin_open: true  # docker run -i
+    tty: true         # docker run -t
+    environment:
+      DISPLAY: unix$DISPLAY
+      QT_X11_NO_MITSHM: 1
+      XDG_RUNTIME_DIR: /tmp/runtime-root
+      NVIDIA_DISABLE_REQUIRE: 1
+      ROS_IP: 127.0.0.1
+      DATA_HOME: /data/nas/General/AthloneCapture/
+      TORCH_HOME: /data/nas/General/Torch
+    container_name: hugs_preprocess
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    ports:
+      - "8888:8888" # jupyter notebook (should be run with --ip 0.0.0.0)
+      - "6006:6006" # tensorboard (should be run with --ip 0.0.0.0)
+    ipc: host
